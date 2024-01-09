@@ -22,24 +22,68 @@ const initializeDBAndServer = async () => {
 }
 initializeDBAndServer()
 
-//API 1
+const hasPriorityAndStatusProperties = requestQuery => {
+  return (
+    requestQuery.priority !== undefined && requestQuery.status !== undefined
+  )
+}
+
+const hasPriorityProperty = requestQuery => {
+  return requestQuery.priority !== undefined
+}
+
+const hasStatusProperty = requestQuery => {
+  return requestQuery.status !== undefined
+}
+
 app.get('/todos/', async (request, response) => {
-  const {status} = request.query
-  const GetAllTodoslistQuery = `
-      SELECT * FROM todo
-      WHERE status LIKE "%${status}%";
-  `
-  const TodoDBResponse = await db.all(GetAllTodoslistQuery)
-  response.send(TodoDBResponse)
+  let data = null
+  let getTodosQuery = ''
+  const {search_q = '', priority, status} = request.query
+
+  switch (true) {
+    case hasPriorityAndStatusProperties(request.query):
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND status = '${status}'
+    AND priority = '${priority}';`
+      break
+    case hasPriorityProperty(request.query):
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND priority = '${priority}';`
+      break
+    case hasStatusProperty(request.query):
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%'
+    AND status = '${status}';`
+      break
+    default:
+      getTodosQuery = `
+   SELECT
+    *
+   FROM
+    todo 
+   WHERE
+    todo LIKE '%${search_q}%';`
+  }
+
+  data = await db.all(getTodosQuery)
+  response.send(data)
 })
 
-// API 2
-app.get('/todos/', async (request, response) => {
-  const {priority} = request.query
-  const GetHighPriorityListQuery = `
-    SELECT * FROM todo
-    WHERE priority LIKE "%${priority}%";
-  `
-  const HighPriorityDBResponse = await db.all(GetHighPriorityListQuery)
-  response.send(HighPriorityDBResponse)
-})
